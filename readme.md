@@ -4,10 +4,6 @@ is a project of mine that I did in python
 to challenge myself to dive into the world of 
 language design despite my 0 knowledge in the field.
 
-# Basic Syntax and Tutorial
-soil's syntax is a mix between assembly and python's bytecode
-with the usual format of **[opname] [arg1] [arg2]** and so on....
-
 # How to run the script
 You can run soil scripts from terminal and type the following command:
 
@@ -24,6 +20,8 @@ example:
 remember that the soil interpreter can accept any kind of file extension, it could even be .txt, but it's recommended to use the .sl extension just for naming convention.
 
 # Basic Syntax and Tutorial
+soil's syntax is a mix between assembly and python's bytecode
+with the usual format of **[opname] [arg1] [arg2]** and so on....
 
 * ### Hello World in soil
 
