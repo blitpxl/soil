@@ -8,7 +8,25 @@ language design despite my 0 knowledge in the field.
 soil's syntax is a mix between assembly and python's bytecode
 with the usual format of **[opname] [arg1] [arg2]** and so on....
 
+# How to run the script
+You can run soil scripts from terminal and type the following command:
+
+```
+    soil [filename]
+```
+
+example:
+
+```
+    soil test.sl
+```
+
+remember that the soil interpreter can accept any kind of file extension, it could even be .txt, but it's recommended to use the .sl extension just for naming convention.
+
+# Basic Syntax and Tutorial
+
 * ### Hello World in soil
+
 ```
     print "Hello World"
 ```
