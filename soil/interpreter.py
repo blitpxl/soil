@@ -21,8 +21,8 @@ class VirtualMachine:
         self.stack = []     # the stack memory
         self.pc = 0         # program counter
 
-    def load_bytecode(self, bytecode):
-        self.bytecode = bytecode
+    def load_bytecode(self, compiled):
+        self.bytecode = compiled
 
     def init_eval_loop(self):
         while self.pc < len(self.bytecode):
