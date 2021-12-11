@@ -1,3 +1,4 @@
+from tokens import *
 import importlib
 
 
@@ -33,29 +34,29 @@ class VirtualMachine:
                 return obj.value
         raise RuntimeError(f"Could not find variable {name}")
 
-    def _push(self, value, position="top"):
-        if position == "top":
+    def _push(self, value, position=TOP):
+        if position == TOP:
             self.stack.append(value)
-        elif position == "replace":
+        elif position == REPLACE:
             self.stack.pop()
             self.stack.append(value)
-        elif position == "bottom":
+        elif position == BOTTOM:
             self.stack = [value] + self.stack
         else:
             raise RuntimeError(f"Cannot push value ({value}) onto the stack, invalid position: {position}")
 
     def push(self, _type, _value, position="top"):
-        if _type == "var":
+        if _type == VAR:
             value = self.get_var(_value)
             if value is not None:
                 self._push(value, position)
-        elif _type == "string":
+        elif _type == STRING:
             self._push(str(_value), position)
-        elif _type == "int":
+        elif _type == INT:
             self._push(int(_value), position)
-        elif _type == "float":
+        elif _type == FLOAT:
             self._push(float(_value), position)
-        elif _type == "bool":
+        elif _type == BOOL:
             self._push(bool(_value), position)
         else:
             raise RuntimeError(f"Invalid data type: {_type}")
@@ -64,23 +65,28 @@ class VirtualMachine:
         self.stack.pop(-elements)
 
     def load(self, _type, _value):
-        if _type == "var":
+        if _type == VAR:
             value = self.get_var(_value)
             if value is not None:
                 self._push(value)
-        elif _type == "string":
+        elif _type == STRING:
             self._push(str(_value))
-        elif _type == "int":
+        elif _type == INT:
             self._push(int(_value))
-        elif _type == "float":
+        elif _type == FLOAT:
             self._push(float(_value))
-        elif _type == "bool":
-            self._push(bool(_value))
+        elif _type == BOOL:
+            if _value == FALSE:
+                self._push(True)
+            elif _value == TRUE:
+                self._push(False)
+            else:
+                raise RuntimeError(f"{_value} is not a bool")
         else:
             raise RuntimeError(f"Invalid data type: {_type}")
 
     def spawn(self, _type):
-        if _type == "var":
+        if _type == VAR:
             self._push(Variable(self.stack.pop(), self.stack.pop()))
         else:
             raise RuntimeError(f"Invalid spawn type: {_type}")
@@ -92,12 +98,12 @@ class VirtualMachine:
 
     def print(self, *args):
         if len(args) < 2:
-            if args[0] == "__stack":
+            if args[0] == STACK_MEM:
                 print(self.stack)
-            elif args[0] == "__src":
+            elif args[0] == SOURCE_MEM:
                 for inst in self.src:
                     print(inst)
-            elif args[0] == "__top":
+            elif args[0] == STACK_TOP:
                 try:
                     print(self.stack[-1])
                 except IndexError:
@@ -107,16 +113,54 @@ class VirtualMachine:
         else:
             _type = args[0]
             value = args[1]
-            if _type == "var":
+            if _type == VAR:
                 print(self.get_var(value))
             else:
                 raise RuntimeError(f"Invalid type: {_type}")
 
-    def jump(self, label):
-        self.pc = self.src.index(["label", label])
+    def jump(self, labelname):
+        self.pc = self.src.index([LABEL, labelname])
+
+    def comp(self, *args):
+        if len(args) < 2:
+            if self.stack.pop() == self.stack.pop():
+                self.jump(args[0])
+            else:
+                return
+        else:
+            modifier = args[0]
+            label = args[1]
+
+            if modifier == AND:
+                if self.stack.pop() and self.stack.pop():
+                    self.jump(label)
+                else:
+                    return
+            elif modifier == OR:
+                if self.stack.pop() or self.stack.pop():
+                    self.jump(label)
+                else:
+                    return
+            elif modifier == NOT:
+                if not (self.stack.pop() == self.stack.pop()):
+                    self.jump(label)
+                else:
+                    return
+            elif modifier == NAND:
+                if not (self.stack.pop() and self.stack.pop()):
+                    self.jump(label)
+                else:
+                    return
+            elif modifier == NOR:
+                if not (self.stack.pop() or self.stack.pop()):
+                    self.jump(label)
+                else:
+                    return
+            else:
+                raise RuntimeError(f"Invalid compare modifier: {modifier}")
 
     def import_(self, _type, name):
-        if _type == "py":
+        if _type == PY:
             mod = importlib.import_module(name)
             self._push(mod)
 
@@ -127,15 +171,15 @@ class VirtualMachine:
         callargs = []
         for idx, arg in enumerate(args):
             if (idx % 2) == 0:
-                if arg == "var":
+                if arg == VAR:
                     callargs.append(self.get_var(args[idx + 1]))
-                elif arg == "string":
+                elif arg == STRING:
                     callargs.append(str(args[idx + 1]))
-                elif arg == "int":
+                elif arg == INT:
                     callargs.append(int(args[idx + 1]))
-                elif arg == "float":
+                elif arg == FLOAT:
                     callargs.append(float(args[idx + 1]))
-                elif arg == "bool":
+                elif arg == BOOL:
                     callargs.append(bool(args[idx + 1]))
         _callable = self.stack.pop()
         retval = _callable(*callargs)
@@ -143,79 +187,81 @@ class VirtualMachine:
             self._push(retval)
 
     def add(self, mode):
-        if mode == "inplace":
+        if mode == INPLACE:
             self._push(self.stack.pop() + self.stack.pop())
-        elif mode == "adjacent":
+        elif mode == ADJACENT:
             self._push(self.stack[-1] + self.stack[-2])
         else:
             raise RuntimeError(f"Invalid add operation mode: {mode}")
 
     def sub(self, mode):
-        if mode == "inplace":
+        if mode == INPLACE:
             self._push(self.stack.pop() - self.stack.pop())
-        elif mode == "adjacent":
+        elif mode == ADJACENT:
             self._push(self.stack[-1] - self.stack[-2])
         else:
             raise RuntimeError(f"Invalid add operation mode: {mode}")
 
     def mul(self, mode):
-        if mode == "inplace":
+        if mode == INPLACE:
             self._push(self.stack.pop() * self.stack.pop())
-        elif mode == "adjacent":
+        elif mode == ADJACENT:
             self._push(self.stack[-1] * self.stack[-2])
         else:
             raise RuntimeError(f"Invalid add operation mode: {mode}")
 
     def div(self, mode):
-        if mode == "inplace":
+        if mode == INPLACE:
             self._push(self.stack.pop() / self.stack.pop())
-        elif mode == "adjacent":
+        elif mode == ADJACENT:
             self._push(self.stack[-1] / self.stack[-2])
         else:
             raise RuntimeError(f"Invalid add operation mode: {mode}")
 
     def mod(self, mode):
-        if mode == "inplace":
+        if mode == INPLACE:
             self._push(self.stack.pop() % self.stack.pop())
-        elif mode == "adjacent":
+        elif mode == ADJACENT:
             self._push(self.stack[-1] % self.stack[-2])
         else:
             raise RuntimeError(f"Invalid add operation mode: {mode}")
 
     def eval_inst(self, opcode, *args):
 
-        if opcode == "nop" or opcode == "label":
+        if opcode == NOP or opcode == LABEL:
             pass
-        elif opcode == "load":
+        elif opcode == LOAD:
             self.load(*args)
-        elif opcode == "spawn":
+        elif opcode == SPAWN:
             self.spawn(*args)
-        elif opcode == "assign":
+        elif opcode == ASSIGN:
             self.assign(*args)
-        elif opcode == "print":
+        elif opcode == PRINT:
             self.print(*args)
-        elif opcode == "jump":
+        elif opcode == JUMP:
             self.jump(*args)
-        elif opcode == "import":
+        elif opcode == IMPORT:
             self.import_(*args)
-        elif opcode == "getattr":
+        elif opcode == GETATTR:
             self.get_attr(*args)
-        elif opcode == "call":
+        elif opcode == CALL:
             self.call(*args)
-        elif opcode == "push":
+        elif opcode == PUSH:
             self.push(*args)
-        elif opcode == "pop":
+        elif opcode == POP:
             self.pop(*args)
-        elif opcode == "add":
+        elif opcode == ADD:
             self.add(*args)
-        elif opcode == "sub":
+        elif opcode == SUB:
             self.sub(*args)
-        elif opcode == "mul":
+        elif opcode == MUL:
             self.mul(*args)
-        elif opcode == "div":
+        elif opcode == DIV:
             self.div(*args)
-        elif opcode == "mod":
+        elif opcode == MOD:
             self.mod(*args)
+        elif opcode == COMP:
+            self.comp(*args)
         else:
             raise RuntimeError(f"Invalid opcode: {opcode}")
 
