@@ -17,16 +17,16 @@ class Variable:
 class VirtualMachine:
     def __init__(self):
         super(VirtualMachine, self).__init__()
-        self.src = []       # the code memory
+        self.bytecode = []  # the bytecode memory
         self.stack = []     # the stack memory
         self.pc = 0         # program counter
 
-    def load_compiled(self, compiled):
-        self.src = compiled
+    def load_bytecode(self, bytecode):
+        self.bytecode = bytecode
 
     def init_eval_loop(self):
-        while self.pc < len(self.src):
-            self.eval_inst(*self.src[self.pc])
+        while self.pc < len(self.bytecode):
+            self.eval_inst(*self.bytecode[self.pc])
 
     def get_var(self, name):
         for obj in self.stack:
@@ -45,7 +45,7 @@ class VirtualMachine:
         else:
             raise RuntimeError(f"Cannot push value ({value}) onto the stack, invalid position: {position}")
 
-    def push(self, _type, _value, position="top"):
+    def push(self, _type, _value, position=TOP):
         if _type == VAR:
             value = self.get_var(_value)
             if value is not None:
@@ -101,7 +101,7 @@ class VirtualMachine:
             if args[0] == STACK_MEM:
                 print(self.stack)
             elif args[0] == SOURCE_MEM:
-                for inst in self.src:
+                for inst in self.bytecode:
                     print(inst)
             elif args[0] == STACK_TOP:
                 try:
@@ -119,45 +119,70 @@ class VirtualMachine:
                 raise RuntimeError(f"Invalid type: {_type}")
 
     def jump(self, labelname):
-        self.pc = self.src.index([LABEL, labelname])
+        self.pc = self.bytecode.index([LABEL, labelname])
 
-    def comp(self, *args):
-        if len(args) < 2:
-            if self.stack.pop() == self.stack.pop():
-                self.jump(args[0])
+    def jumpt(self, labelname):
+        if self.stack.pop():
+            self.pc = self.bytecode.index([LABEL, labelname])
+
+    def jumpf(self, labelname):
+        if not self.stack.pop():
+            self.pc = self.bytecode.index([LABEL, labelname])
+
+    def comp(self, operator=None):
+        if operator is None:
+            if self.stack[-1] == self.stack[-2]:
+                self._push(True)
             else:
-                return
+                self._push(False)
         else:
-            modifier = args[0]
-            label = args[1]
-
-            if modifier == AND:
-                if self.stack.pop() and self.stack.pop():
-                    self.jump(label)
+            if operator == AND:
+                if self.stack[-1] and self.stack[-2]:
+                    self._push(True)
                 else:
-                    return
-            elif modifier == OR:
-                if self.stack.pop() or self.stack.pop():
-                    self.jump(label)
+                    self._push(False)
+            elif operator == OR:
+                if self.stack[-1] or self.stack[-2]:
+                    self._push(True)
                 else:
-                    return
-            elif modifier == NOT:
-                if not (self.stack.pop() == self.stack.pop()):
-                    self.jump(label)
+                    self._push(False)
+            elif operator == NOT:
+                if not (self.stack[-1] == self.stack[-2]):
+                    self._push(True)
                 else:
-                    return
-            elif modifier == NAND:
-                if not (self.stack.pop() and self.stack.pop()):
-                    self.jump(label)
+                    self._push(False)
+            elif operator == NAND:
+                if not (self.stack[-1] and self.stack[-2]):
+                    self._push(True)
                 else:
-                    return
-            elif modifier == NOR:
-                if not (self.stack.pop() or self.stack.pop()):
-                    self.jump(label)
+                    self._push(False)
+            elif operator == NOR:
+                if not (self.stack[-1] or self.stack[-2]):
+                    self._push(True)
                 else:
-                    return
+                    self._push(False)
+            elif operator == GREATER_THAN:
+                if self.stack[-1] > self.stack[-2]:
+                    self._push(True)
+                else:
+                    self._push(False)
+            elif operator == GREATER_THAN_OR_EQUAL:
+                if self.stack[-1] >= self.stack[-2]:
+                    self._push(True)
+                else:
+                    self._push(False)
+            elif operator == LESS_THAN:
+                if self.stack[-1] < self.stack[-2]:
+                    self._push(True)
+                else:
+                    self._push(False)
+            elif operator == LESS_THAN_OR_EQUAL:
+                if self.stack[-1] <= self.stack[-2]:
+                    self._push(True)
+                else:
+                    self._push(False)
             else:
-                raise RuntimeError(f"Invalid compare modifier: {modifier}")
+                raise RuntimeError(f"Invalid comparison modifier: {operator}")
 
     def import_(self, _type, name):
         if _type == PY:
@@ -240,6 +265,10 @@ class VirtualMachine:
             self.print(*args)
         elif opcode == JUMP:
             self.jump(*args)
+        elif opcode == JUMP_IF_TRUE:
+            self.jumpt(*args)
+        elif opcode == JUMP_IF_FALSE:
+            self.jumpf(*args)
         elif opcode == IMPORT:
             self.import_(*args)
         elif opcode == GETATTR:

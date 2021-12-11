@@ -51,6 +51,10 @@ def tokenize_line(splitted_line):
             tokenized_line.append(IMPORT)
         elif token == "jump":
             tokenized_line.append(JUMP)
+        elif token == "jumpt":
+            tokenized_line.append(JUMP_IF_TRUE)
+        elif token == "jumpf":
+            tokenized_line.append(JUMP_IF_FALSE)
         elif token == "label":
             tokenized_line.append(LABEL)
         elif token == "load":
@@ -99,6 +103,18 @@ def tokenize_line(splitted_line):
             tokenized_line.append(AND)
         elif token == "|":
             tokenized_line.append(OR)
+        elif token == "!&":
+            tokenized_line.append(NAND)
+        elif token == "!|":
+            tokenized_line.append(NOR)
+        elif token == ">":
+            tokenized_line.append(GREATER_THAN)
+        elif token == ">=":
+            tokenized_line.append(GREATER_THAN_OR_EQUAL)
+        elif token == "<":
+            tokenized_line.append(LESS_THAN)
+        elif token == "<=":
+            tokenized_line.append(LESS_THAN_OR_EQUAL)
         elif token == "false":
             tokenized_line.append(FALSE)
         elif token == "true":
