@@ -1,4 +1,7 @@
 from tokens import *
+from compiler import compile_file
+
+import os
 import importlib
 
 
@@ -11,7 +14,7 @@ class Variable:
         return self.name
 
     def __repr__(self):
-        return f"Var({self.value}, {self.name})"
+        return f"Var({self.name}, {self.value})"
 
 
 class VirtualMachine:
@@ -21,7 +24,10 @@ class VirtualMachine:
         self.stack = []     # the stack memory
         self.pc = 0         # program counter
 
-    def load_bytecode(self, compiled):
+        self.script_path = None
+
+    def load_bytecode(self, compiled, path):
+        self.script_path = os.path.split(path)[0]
         self.bytecode = compiled
 
     def init_eval_loop(self):
@@ -57,12 +63,17 @@ class VirtualMachine:
         elif _type == FLOAT:
             self._push(float(_value), position)
         elif _type == BOOL:
-            self._push(bool(_value), position)
+            if _value == TRUE:
+                self._push(True)
+            elif _value == FALSE:
+                self._push(False)
+            else:
+                raise RuntimeError(f"{_value} is not a bool")
         else:
             raise RuntimeError(f"Invalid data type: {_type}")
 
     def pop(self, elements=1):
-        self.stack.pop(-elements)
+        self.stack.pop(-int(elements))
 
     def load(self, _type, _value):
         if _type == VAR:
@@ -76,9 +87,9 @@ class VirtualMachine:
         elif _type == FLOAT:
             self._push(float(_value))
         elif _type == BOOL:
-            if _value == FALSE:
+            if _value == TRUE:
                 self._push(True)
-            elif _value == TRUE:
+            elif _value == FALSE:
                 self._push(False)
             else:
                 raise RuntimeError(f"{_value} is not a bool")
@@ -88,6 +99,16 @@ class VirtualMachine:
     def spawn(self, _type):
         if _type == VAR:
             self._push(Variable(self.stack.pop(), self.stack.pop()))
+        elif _type == UNITIALIZED_VAR:
+            self._push(Variable(self.stack.pop(), None))
+        else:
+            raise RuntimeError(f"Invalid spawn type: {_type}")
+
+    def delete(self, _type, name):
+        if _type == VAR:
+            for obj in self.stack:
+                if str(obj) == name:
+                    self.stack.remove(obj)
         else:
             raise RuntimeError(f"Invalid spawn type: {_type}")
 
@@ -185,9 +206,14 @@ class VirtualMachine:
                 raise RuntimeError(f"Invalid comparison modifier: {operator}")
 
     def import_(self, _type, name):
-        if _type == PY:
+        if _type == PYTHON_SCRIPT:
             mod = importlib.import_module(name)
             self._push(mod)
+        elif _type == SOIL_SCRIPT:
+            compiled = compile_file(f"{self.script_path}/{name}.sl")
+            self.bytecode.pop(self.bytecode.index([IMPORT, SOIL_SCRIPT, name]))
+            self.bytecode = compiled + self.bytecode
+            self.pc = self.pc - 1
 
     def get_attr(self, name):
         self._push(getattr(self.stack.pop(), name))
@@ -259,6 +285,8 @@ class VirtualMachine:
             self.load(*args)
         elif opcode == SPAWN:
             self.spawn(*args)
+        elif opcode == DELETE:
+            self.delete(*args)
         elif opcode == ASSIGN:
             self.assign(*args)
         elif opcode == PRINT:

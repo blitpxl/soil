@@ -1,3 +1,5 @@
+import os.path
+
 from tokens import *
 
 
@@ -73,6 +75,8 @@ def tokenize_line(splitted_line):
             tokenized_line.append(PUSH)
         elif token == "spawn":
             tokenized_line.append(SPAWN)
+        elif token == "delete":
+            tokenized_line.append(DELETE)
         elif token == "sub":
             tokenized_line.append(SUB)
         elif token == "adjacent":
@@ -88,7 +92,9 @@ def tokenize_line(splitted_line):
         elif token == "int":
             tokenized_line.append(INT)
         elif token == "py":
-            tokenized_line.append(PY)
+            tokenized_line.append(PYTHON_SCRIPT)
+        elif token == "sl":
+            tokenized_line.append(SOIL_SCRIPT)
         elif token == "replace":
             tokenized_line.append(REPLACE)
         elif token == "string":
@@ -97,6 +103,8 @@ def tokenize_line(splitted_line):
             tokenized_line.append(TOP)
         elif token == "var":
             tokenized_line.append(VAR)
+        elif token == "uvar":
+            tokenized_line.append(UNITIALIZED_VAR)
         elif token == "!":
             tokenized_line.append(NOT)
         elif token == "&":
@@ -135,6 +143,7 @@ def compile_file(file):
     with open(file) as src:
         src = src.readlines()
         _compiled = []
+
         for line in src:
             line = line.strip()
             if not line or line.startswith("#"):

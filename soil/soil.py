@@ -1,3 +1,5 @@
+import os.path
+
 from compiler import compile_file
 from interpreter import VirtualMachine
 import sys
@@ -11,5 +13,5 @@ if __name__ == '__main__':
         else:
             compiled = compile_file(sys.argv[1])
             vm = VirtualMachine()
-            vm.load_bytecode(compiled)
+            vm.load_bytecode(compiled, path=os.path.abspath(sys.argv[1]))
             vm.init_eval_loop()

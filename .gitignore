@@ -1,4 +1,5 @@
 soil/test.sl
+soil/test_import.sl
 dist
 build
 soil.spec
