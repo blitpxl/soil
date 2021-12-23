@@ -1,4 +1,6 @@
 soil/test.sl
+soil/test_import.sl
+soil/test.py
 dist
 build
 soil.spec

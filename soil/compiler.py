@@ -35,20 +35,31 @@ def split_line(string):
 def tokenize_line(splitted_line):
     tokenized_line = []
     for token in splitted_line:
-        if token == "add":
+        if token.endswith(":"):
+            tokenized_line.append(FUNCTION)
+            tokenized_line.append(token.replace(":", ""))
+        elif token == "add":
             tokenized_line.append(ADD)
         elif token == "assign":
             tokenized_line.append(ASSIGN)
         elif token == "call":
             tokenized_line.append(CALL)
+        elif token == "pycall":
+            tokenized_line.append(PYTHON_CALL)
         elif token == "comp":
             tokenized_line.append(COMP)
+        elif token == "prompt":
+            tokenized_line.append(PROMPT)
+        elif token == "cast":
+            tokenized_line.append(CAST)
         elif token == "div":
             tokenized_line.append(DIV)
         elif token == "getattr":
             tokenized_line.append(GETATTR)
         elif token == "import":
-            tokenized_line.append(IMPORT)
+            tokenized_line.append(SOIL_IMPORT)
+        elif token == "pyimport":
+            tokenized_line.append(PYTHON_IMPORT)
         elif token == "jump":
             tokenized_line.append(JUMP)
         elif token == "jumpt":
@@ -73,6 +84,8 @@ def tokenize_line(splitted_line):
             tokenized_line.append(PUSH)
         elif token == "spawn":
             tokenized_line.append(SPAWN)
+        elif token == "delete":
+            tokenized_line.append(DELETE)
         elif token == "sub":
             tokenized_line.append(SUB)
         elif token == "adjacent":
@@ -87,8 +100,6 @@ def tokenize_line(splitted_line):
             tokenized_line.append(INPLACE)
         elif token == "int":
             tokenized_line.append(INT)
-        elif token == "py":
-            tokenized_line.append(PY)
         elif token == "replace":
             tokenized_line.append(REPLACE)
         elif token == "string":
@@ -97,6 +108,10 @@ def tokenize_line(splitted_line):
             tokenized_line.append(TOP)
         elif token == "var":
             tokenized_line.append(VAR)
+        elif token == "uvar":
+            tokenized_line.append(UNITIALIZED_VAR)
+        elif token == "ret":
+            tokenized_line.append(RETURN)
         elif token == "!":
             tokenized_line.append(NOT)
         elif token == "&":
@@ -119,8 +134,8 @@ def tokenize_line(splitted_line):
             tokenized_line.append(FALSE)
         elif token == "true":
             tokenized_line.append(TRUE)
-        elif token == "__src":
-            tokenized_line.append(SOURCE_MEM)
+        elif token == "__byte":
+            tokenized_line.append(BYTECODE)
         elif token == "__stack":
             tokenized_line.append(STACK_MEM)
         elif token == "__top":
@@ -135,6 +150,7 @@ def compile_file(file):
     with open(file) as src:
         src = src.readlines()
         _compiled = []
+
         for line in src:
             line = line.strip()
             if not line or line.startswith("#"):
